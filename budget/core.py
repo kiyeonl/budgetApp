@@ -44,3 +44,24 @@ def get_balance(transactions: list[dict[str, Any]]) -> float:
     if not transactions:
         return 0.0
     return float(sum(transaction["amount"] for transaction in transactions))
+
+
+def filter_by_category(
+    transactions: list[dict[str, Any]],
+    category: str,
+) -> list[dict[str, Any]]:
+    """Return transactions whose category matches the given category.
+
+    Args:
+        transactions: Existing transaction records.
+        category: Category name to match.
+
+    Returns:
+        A new list of matching transactions.
+    """
+    normalized_category = category.casefold()
+    return [
+        transaction.copy()
+        for transaction in transactions
+        if transaction["category"].casefold() == normalized_category
+    ]
