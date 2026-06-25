@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+from pathlib import Path
 from typing import Any
 
 
@@ -65,3 +67,52 @@ def filter_by_category(
         for transaction in transactions
         if transaction["category"].casefold() == normalized_category
     ]
+
+
+def load_transactions_from_csv(csv_path: Path) -> list[dict[str, Any]]:
+    """Load transactions from a CSV file.
+
+    Args:
+        csv_path: Path to the CSV file.
+
+    Returns:
+        A list of transaction dictionaries.
+    """
+    transactions: list[dict[str, Any]] = []
+    with csv_path.open("r", encoding="utf-8-sig", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            transactions.append(
+                {
+                    "date": row["date"],
+                    "type": row["type"],
+                    "category": row["category"],
+                    "description": row["description"],
+                    "amount": int(row["amount"]),
+                    "memo": row["memo"],
+                }
+            )
+    return transactions
+
+
+def monthly_summary(transactions: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    """Summarize transactions by month.
+
+    Args:
+        transactions: Existing transaction records.
+
+    Returns:
+        Monthly totals keyed by YYYY-MM.
+    """
+    summary: dict[str, dict[str, int]] = {}
+    for transaction in transactions:
+        month = transaction["date"][:7]
+        if month not in summary:
+            summary[month] = {"income": 0, "expense": 0, "net": 0}
+        amount = int(transaction["amount"])
+        if amount >= 0:
+            summary[month]["income"] += amount
+        else:
+            summary[month]["expense"] += amount
+        summary[month]["net"] += amount
+    return summary

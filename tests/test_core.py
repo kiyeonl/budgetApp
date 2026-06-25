@@ -1,6 +1,13 @@
 """Tests for budget core logic."""
 
-from budget.core import add_transaction, filter_by_category, get_balance
+from pathlib import Path
+
+from budget.core import (
+    add_transaction,
+    filter_by_category,
+    get_balance,
+    monthly_summary,
+)
 
 
 def test_add_transaction_increases_length() -> None:
@@ -188,3 +195,82 @@ def test_filter_by_category_returns_independent_result() -> None:
     result[0]["description"] = "변경"
 
     assert transactions[0]["description"] == "항공권"
+
+
+def test_load_transactions_from_csv_reads_step1_data() -> None:
+    """CSV loading should preserve the step1 transaction structure."""
+    from budget.core import load_transactions_from_csv
+
+    csv_path = Path("data/step1_transactions.csv")
+
+    result = load_transactions_from_csv(csv_path)
+
+    assert len(result) == 10
+    assert result[0] == {
+        "date": "2026-01-05",
+        "type": "지출",
+        "category": "식비",
+        "description": "점심식사",
+        "amount": -12000,
+        "memo": "",
+    }
+    assert result[-1] == {
+        "date": "2026-01-28",
+        "type": "기타수입",
+        "category": "기타수입",
+        "description": "중고 판매",
+        "amount": 25000,
+        "memo": "중고마켓",
+    }
+    assert all(isinstance(transaction["amount"], int) for transaction in result)
+
+
+def test_monthly_summary_groups_by_year_month() -> None:
+    """Monthly summary should group income, expense, and net by YYYY-MM."""
+    transactions = [
+        {
+            "date": "2026-01-04",
+            "type": "지출",
+            "category": "여행",
+            "description": "항공권",
+            "amount": -979796,
+            "memo": "메모_3",
+        },
+        {
+            "date": "2026-01-15",
+            "type": "수입",
+            "category": "기타수입",
+            "description": "중고 판매",
+            "amount": 135541,
+            "memo": "",
+        },
+        {
+            "date": "2026-02-01",
+            "type": "지출",
+            "category": "여행",
+            "description": "여행 경비",
+            "amount": -651009,
+            "memo": "카드결제",
+        },
+        {
+            "date": "2026-02-01",
+            "type": "수입",
+            "category": "급여",
+            "description": "월급",
+            "amount": 4358625,
+            "memo": "",
+        },
+    ]
+
+    assert monthly_summary(transactions) == {
+        "2026-01": {
+            "income": 135541,
+            "expense": -979796,
+            "net": -844255,
+        },
+        "2026-02": {
+            "income": 4358625,
+            "expense": -651009,
+            "net": 3707616,
+        },
+    }
