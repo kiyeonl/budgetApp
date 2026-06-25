@@ -18,5 +18,15 @@ def add_transaction(
     Returns:
         A new list containing the added transaction.
     """
-    pass
-
+    new_transactions = transactions.copy()
+    new_transactions.append(
+        {
+            "date": transaction["date"],
+            "type": transaction["type"],
+            "category": transaction["category"],
+            "description": transaction["description"],
+            "amount": transaction["amount"],
+            "memo": transaction["memo"],
+        }
+    )
+    return new_transactions
