@@ -6,6 +6,7 @@ from budget.core import (
     add_transaction,
     filter_by_category,
     get_balance,
+    load_transactions_from_csv,
     monthly_summary,
 )
 
@@ -199,8 +200,6 @@ def test_filter_by_category_returns_independent_result() -> None:
 
 def test_load_transactions_from_csv_reads_step1_data() -> None:
     """CSV loading should preserve the step1 transaction structure."""
-    from budget.core import load_transactions_from_csv
-
     csv_path = Path("data/step1_transactions.csv")
 
     result = load_transactions_from_csv(csv_path)
@@ -274,3 +273,34 @@ def test_monthly_summary_groups_by_year_month() -> None:
             "net": 3707616,
         },
     }
+
+
+def test_load_transactions_from_large_csv_reads_5000_rows() -> None:
+    """Large CSV files should load all rows without changing types."""
+    csv_path = Path("data/step4_large_transactions.csv")
+
+    result = load_transactions_from_csv(csv_path)
+
+    assert len(result) == 5000
+    assert isinstance(result[0]["amount"], int)
+    assert isinstance(result[-1]["amount"], int)
+
+
+def test_get_balance_handles_large_csv_data() -> None:
+    """Large CSV data should produce the expected total balance."""
+    csv_path = Path("data/step4_large_transactions.csv")
+    transactions = load_transactions_from_csv(csv_path)
+
+    assert get_balance(transactions) == 1134968783.0
+
+
+def test_monthly_summary_handles_large_csv_data() -> None:
+    """Large CSV data should cover all months from 2020-01 to 2026-06."""
+    csv_path = Path("data/step4_large_transactions.csv")
+    transactions = load_transactions_from_csv(csv_path)
+
+    result = monthly_summary(transactions)
+
+    assert len(result) == 78
+    assert "2020-01" in result
+    assert "2026-06" in result
